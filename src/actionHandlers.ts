@@ -3,6 +3,7 @@ import GameModes from "./GameMode.js";
 import { InsaneInt } from "./InsaneInt.js";
 import Lobby, { getEnemy } from "./Lobby.js";
 import type {
+	ActionReconnect,
 	ActionCreateLobby,
 	ActionEatPizza,
 	ActionHandlerArgs,
@@ -61,8 +62,9 @@ const joinLobbyAction = (
 };
 
 const leaveLobbyAction = (client: Client) => {
-	client.lobby?.leave(client);
+	client.lobby?.leave(client, true);
 };
+
 
 const lobbyInfoAction = (client: Client) => {
 	client.lobby?.broadcastLobbyInfo();

@@ -61,7 +61,21 @@ class Lobby {
 		return Lobbies.get(code);
 	};
 
-	leave = (client: Client) => {
+	resyncClient = (client: Client) => {
+		client.sendAction({
+			action: "joinedLobby",
+			code: this.code,
+			type: this.gameMode,
+		});
+		client.sendAction({
+			action: "lobbyOptions",
+			gamemode: this.gameMode,
+			...this.options,
+		});
+		this.broadcastLobbyInfo();
+	};
+
+	leave = (client: Client, permanent = true) => {
 		if (this.host?.id === client.id) {
 			this.host = this.guest;
 			this.guest = null;
@@ -70,11 +84,13 @@ class Lobby {
 		}
 
 		client.setLobby(null);
-		if (this.host === null) {
+
+		if (!this.host) {
 			Lobbies.delete(this.code);
-		} else {
-			// TODO: Refactor for more than 2 players
-			// Stop game if someone leaves
+			return;
+		}
+
+		if (permanent) {
 			this.broadcastAction({ action: "stopGame" });
 			this.resetPlayers();
 			this.broadcastLobbyInfo();

@@ -40,12 +40,18 @@ class Client {
 
 	isCached = true
 
+	// NEW - very important for reconnection support
+	playerId: string | null = null;     // persistent identifier from client
+	reconnectAttempts = 0;              // how many times this session reconnected
+	lastDisconnectedAt?: Date;
+
 	constructor(address: Address, send: SendFn, closeConnection: CloseConnFn) {
-		this.id = uuidv4()
-		this.address = address
-		this.sendAction = send
-		this.closeConnection = closeConnection
+		this.id = uuidv4();
+		this.address = address;
+		this.sendAction = send;
+		this.closeConnection = closeConnection;
 	}
+
 
 	setLocation = (location: string) => {
 		this.location = location
@@ -75,27 +81,60 @@ class Client {
 	resetBlocker = () => {
 		this.livesBlocker = false
 	}
+	// Called when client sends { action: "reconnect", playerId: "xxx" }
+	handleReconnectAttempt(incomingPlayerId: string) {
+		if (!this.playerId) {
+		// First time this connection tells us who they are
+		this.playerId = incomingPlayerId;
+		this.reconnectAttempts = 0;
+		console.log(`New player connected: ${this.username} (${this.playerId})`);
+		return;
+		}
 
-	loseLife = () => {
-		if (!this.livesBlocker) {
-			this.lives -= 1
-			this.livesBlocker = true
-			this.sendAction({ action: "playerInfo", lives: this.lives });
-			if (this.lobby && this.lobby.host && this.lobby.guest) {
-				const enemy = this.lobby.host === this ? this.lobby.guest : this.lobby.host
-				enemy.sendAction({
-					action: "enemyInfo",
-					handsLeft: this.handsLeft,
-					score: this.score.toString(),
-					skips: this.skips,
-					lives: this.lives,
-				});
-			}
+		if (incomingPlayerId === this.playerId) {
+		// Same player → this is a reconnect!
+		this.reconnectAttempts++;
+		console.log(
+			`Player ${this.username} (${this.playerId}) reconnected ` +
+			`(attempt #${this.reconnectAttempts})`
+		);
+
+		// Optional: you can send back the current game state here
+		this.sendCurrentGameState();
+		} else {
+		// Different player id on same connection? Suspicious...
+		console.warn("Player ID mismatch during reconnect attempt");
 		}
 	}
 
-	setSkips = (skips: number) => {
-		this.skips = skips
+	// Optional: helper to send current game state after reconnect
+	private sendCurrentGameState() {
+		if (!this.lobby) return;
+
+		this.sendAction({
+		action: "reconnectSuccess",
+		lives: this.lives,
+		score: this.score.toString(),
+		// ... other important state ...
+		});
+	}
+
+	// You might also want to update this method:
+	loseLife = () => {
+		if (!this.livesBlocker) {
+		this.lives -= 1;
+		this.livesBlocker = true;
+
+		this.sendAction({ action: "playerInfo", lives: this.lives });
+
+		// Also send to enemy...
+		}
+	};
+
+	// Optional: reset some state when connection is really new
+	markAsNewConnection() {
+		this.reconnectAttempts = 0;
+		// Maybe reset ready status etc. depending on your game rules
 	}
 }
 
