@@ -61,41 +61,42 @@ export type ActionReceiveNemesisStatsRequest = { action: 'nemesisEndGameStats', 
 export type ActionStartAnteTimer = { action: 'startAnteTimer', time: number }
 export type ActionPauseAnteTimer = { action: 'pauseAnteTimer', time: number }
 export type ActionServerToClient =
-  | ActionConnected
-  | ActionError
-  | ActionJoinedLobby
-  | ActionLobbyInfo
-  | ActionStopGame
-  | ActionStartGame
-  | ActionStartBlind
-  | ActionWinGame
-  | ActionLoseGame
-  | ActionGameInfo
-  | ActionPlayerInfo
-  | ActionEnemyInfo
-  | ActionEndPvP
-  | ActionLobbyOptions
-  | ActionRequestVersion
-  | ActionUtility
-  | ActionEnemyLocation
-  | ActionSendPhantom
-  | ActionRemovePhantom
-  | ActionSpeedrun
-  | ActionAsteroid
-  | ActionLetsGoGamblingNemesis
-  | ActionEatPizza
-  | ActionSoldJoker
-  | ActionSpentLastShop
-  | ActionMagnet
-  | ActionMagnetResponse
-  | ActionGetEndGameJokersRequest
-  | ActionReceiveEndGameJokersRequest
-  | ActionGetNemesisDeckRequest
-  | ActionReceiveNemesisDeckRequest
-  | ActionGetNemesisStatsRequest
-  | ActionReceiveNemesisStatsRequest
-  | ActionStartAnteTimer
-  | ActionPauseAnteTimer
+	| ActionReconnect
+	| ActionConnected
+	| ActionError
+	| ActionJoinedLobby
+	| ActionLobbyInfo
+	| ActionStopGame
+	| ActionStartGame
+	| ActionStartBlind
+	| ActionWinGame
+	| ActionLoseGame
+	| ActionGameInfo
+	| ActionPlayerInfo
+	| ActionEnemyInfo
+	| ActionEndPvP
+	| ActionLobbyOptions
+	| ActionRequestVersion
+	| ActionUtility
+	| ActionEnemyLocation
+	| ActionSendPhantom
+	| ActionRemovePhantom
+	| ActionSpeedrun
+	| ActionAsteroid
+	| ActionLetsGoGamblingNemesis
+	| ActionEatPizza
+	| ActionSoldJoker
+	| ActionSpentLastShop
+	| ActionMagnet
+	| ActionMagnetResponse
+	| ActionGetEndGameJokersRequest
+	| ActionReceiveEndGameJokersRequest
+	| ActionGetNemesisDeckRequest
+	| ActionReceiveNemesisDeckRequest
+	| ActionGetNemesisStatsRequest
+	| ActionReceiveNemesisStatsRequest
+	| ActionStartAnteTimer
+	| ActionPauseAnteTimer
 // Client to Server
 export type ActionReconnect = { action: 'reconnect'; playerId: string }
 export type ActionUsername = { action: 'username'; username: string; modHash: string }
@@ -145,50 +146,48 @@ export type ActionPauseAnteTimerRequest = { action: 'pauseAnteTimer', time: numb
 export type ActionFailTimer = { action: 'failTimer' }
 export type ActionSyncClient = { action: 'syncClient', isCached: boolean }
 export type ActionClientToServer =
-  | ActionReconnect
-  | ActionUsername
-  | ActionCreateLobby
-  | ActionJoinLobby
-  | ActionLeaveLobby
-  | ActionReadyLobby
-  | ActionUnreadyLobby
-  | ActionLobbyInfoRequest
-  | ActionStopGameRequest
-  | ActionStartGameRequest
-  | ActionReadyBlind
-  | ActionPlayHand
-  | ActionGameInfoRequest
-  | ActionPlayerInfoRequest
-  | ActionEnemyInfoRequest
-  | ActionUnreadyBlind
-  | ActionLobbyOptions
-  | ActionFailRound
-  | ActionSetAnte
-  | ActionVersion
-  | ActionSetLocation
-  | ActionNewRound
-  | ActionSetFurthestBlind
-  | ActionSkip
-  | ActionSendPhantom
-  | ActionRemovePhantom
-  | ActionAsteroid
-  | ActionLetsGoGamblingNemesisRequest
-  | ActionEatPizzaRequest
-  | ActionSoldJokerRequest
-  | ActionSpentLastShopRequest
-  | ActionMagnetRequest
-  | ActionMagnetResponseRequest
-  | ActionGetEndGameJokersResponse
-  | ActionReceiveEndGameJokersResponse
-  | ActionGetNemesisDeckResponse
-  | ActionReceiveNemesisDeckResponse
-  | ActionGetNemesisStatsResponse
-  | ActionReceiveNemesisStatsResponse
-  | ActionStartAnteTimerRequest
-  | ActionPauseAnteTimerRequest
-  | ActionFailTimer
-  | ActionSyncClient
-
+	| ActionUsername
+	| ActionCreateLobby
+	| ActionJoinLobby
+	| ActionLeaveLobby
+	| ActionReadyLobby
+	| ActionUnreadyLobby
+	| ActionLobbyInfoRequest
+	| ActionStopGameRequest
+	| ActionStartGameRequest
+	| ActionReadyBlind
+	| ActionPlayHand
+	| ActionGameInfoRequest
+	| ActionPlayerInfoRequest
+	| ActionEnemyInfoRequest
+	| ActionUnreadyBlind
+	| ActionLobbyOptions
+	| ActionFailRound
+	| ActionSetAnte
+	| ActionVersion
+	| ActionSetLocation
+	| ActionNewRound
+	| ActionSetFurthestBlind
+	| ActionSkip
+	| ActionSendPhantom
+	| ActionRemovePhantom
+	| ActionAsteroid
+	| ActionLetsGoGamblingNemesisRequest
+	| ActionEatPizzaRequest
+	| ActionSoldJokerRequest
+	| ActionSpentLastShopRequest
+	| ActionMagnetRequest
+	| ActionMagnetResponseRequest
+	| ActionGetEndGameJokersResponse
+	| ActionReceiveEndGameJokersResponse
+	| ActionGetNemesisDeckResponse
+	| ActionReceiveNemesisDeckResponse
+	| ActionGetNemesisStatsResponse
+	| ActionReceiveNemesisStatsResponse
+	| ActionStartAnteTimerRequest
+	| ActionPauseAnteTimerRequest
+	| ActionFailTimer
+	| ActionSyncClient
 // Utility actions
 export type ActionKeepAlive = { action: 'keepAlive' }
 export type ActionKeepAliveAck = { action: 'keepAliveAck' }
@@ -212,14 +211,6 @@ export type ActionHandlers = {
 		...args: any[]
 	) => void
 }
-export const keepAliveAction: ActionHandler<{}> = (data, client) => {
-    const id = data.playerId ?? client.id;
-    client.sendAction({
-        action: "keepAliveAck",
-        playerId: id,
-        time: Date.now(),
-    });
-};
 
 export type ActionHandlerArgs<T extends HandledActions> = Omit<T, 'action'>
 
