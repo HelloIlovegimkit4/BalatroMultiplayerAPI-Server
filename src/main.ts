@@ -36,7 +36,7 @@ let buffer = '';
 const PORT = 8788
 const HOST = '0.0.0.0'
 /** reconnect grace period (ms) */
-const RECONNECT_TIMEOUT = 30_000
+const RECONNECT_TIMEOUT = 60_000
 
 /** persistent clients */
 const clientsByPlayerId = new Map<string, Client>()
