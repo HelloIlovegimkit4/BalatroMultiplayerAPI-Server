@@ -191,13 +191,14 @@ export type ActionClientToServer =
 
 // Utility actions
 export type ActionKeepAlive = { action: 'keepAlive' }
-export type ActionKeepAliveAck = { action: 'keepAliveAck' }
+export type ActionKeepAliveAck = { action: 'keepAliveAck'; time: number }
 
 export type ActionUtility = ActionKeepAlive | ActionKeepAliveAck
 
 export type Action = ActionServerToClient | ActionClientToServer | ActionUtility
 
 type HandledActions = ActionClientToServer | ActionUtility
+
 export type ActionHandlers = {
 	[K in HandledActions['action']]: keyof ActionHandlerArgs<
 		Extract<HandledActions, { action: K }>

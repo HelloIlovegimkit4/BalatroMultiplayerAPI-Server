@@ -3,12 +3,12 @@ import GameModes from "./GameMode.js";
 import { InsaneInt } from "./InsaneInt.js";
 import Lobby, { getEnemy } from "./Lobby.js";
 import type {
-	ActionReconnect,
 	ActionCreateLobby,
 	ActionEatPizza,
 	ActionHandlerArgs,
 	ActionHandlers,
 	ActionJoinLobby,
+	ActionKeepAlive,
 	ActionMagnet,
 	ActionMagnetResponse,
 	ActionPlayHand,
@@ -80,10 +80,24 @@ const unreadyLobbyAction = (client: Client) => {
 	client.lobby?.broadcastLobbyInfo();
 };
 
-const keepAliveAction = (client: Client) => {
-	// Send an ack back to the received keepAlive
-	client.sendAction({ action: "keepAliveAck" });
+const keepAliveAction = (
+	_: ActionHandlerArgs<ActionKeepAlive>,
+	client: Client,
+) => {
+	client.sendAction({
+		action: "keepAliveAck",
+		time: Date.now(),
+	});
 };
+
+
+const keepAliveAckAction = (
+	_: ActionHandlerArgs<ActionKeepAliveAck>,
+	client: Client,
+) => {
+	client.lastKeepAlive = Date.now();
+};
+
 
 const startGameAction = (client: Client) => {
 	const lobby = client.lobby;
@@ -587,7 +601,11 @@ export const actionHandlers = {
 	leaveLobby: leaveLobbyAction,
 	readyLobby: readyLobbyAction,
 	unreadyLobby: unreadyLobbyAction,
+
+	// ✅ keepalive support
 	keepAlive: keepAliveAction,
+	keepAliveAck: keepAliveAckAction,
+
 	startGame: startGameAction,
 	readyBlind: readyBlindAction,
 	unreadyBlind: unreadyBlindAction,
