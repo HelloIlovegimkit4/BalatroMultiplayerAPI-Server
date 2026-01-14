@@ -145,6 +145,7 @@ export type ActionPauseAnteTimerRequest = { action: 'pauseAnteTimer', time: numb
 export type ActionFailTimer = { action: 'failTimer' }
 export type ActionSyncClient = { action: 'syncClient', isCached: boolean }
 export type ActionClientToServer =
+  | ActionReconnectSuccess
   | ActionReconnect
   | ActionUsername
   | ActionCreateLobby
@@ -190,8 +191,8 @@ export type ActionClientToServer =
   | ActionSyncClient
 
 // Utility actions
-export type ActionKeepAlive = { action: 'keepAlive' }
-export type ActionKeepAliveAck = { action: 'keepAliveAck'; time: number }
+export type ActionKeepAlive = { action: 'keepAlive'; playerId?: string }
+export type ActionKeepAliveAck = { action: 'keepAliveAck'; playerId?: string; time: number }
 
 export type ActionUtility = ActionKeepAlive | ActionKeepAliveAck
 
@@ -213,15 +214,26 @@ export type ActionHandlers = {
 		...args: any[]
 	) => void
 }
-export const keepAliveAction: ActionHandler<{}> = (data, client) => {
-    const id = data.playerId ?? client.id;
-    client.sendAction({
-        action: "keepAliveAck",
-        playerId: id,
-        time: Date.now(),
-    });
+export type IncomingAction = ActionClientToServer | ActionUtility;
+
+export type IncomingPayload = IncomingAction extends { action: infer A }
+  ? Extract<IncomingAction, { action: A }> extends infer T
+    ? Omit<T, 'action'>
+    : never
+  : never;
+
+export type ActionHandlerMap = {
+  [K in IncomingAction['action']]: (payload: Extract<IncomingAction, { action: K }>['action'] extends K
+    ? Omit<Extract<IncomingAction, { action: K }>, 'action'>
+    : never,
+    client: Client
+  ) => void;
 };
 
+interface Client {
+  id: string;
+  sendAction(action: ActionServerToClient): void;
+}
 export type ActionHandlerArgs<T extends HandledActions> = Omit<T, 'action'>
 
 // Other types

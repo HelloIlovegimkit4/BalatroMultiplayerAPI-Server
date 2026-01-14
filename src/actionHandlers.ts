@@ -92,10 +92,11 @@ const keepAliveAction = (
 
 
 const keepAliveAckAction = (
-	_: ActionHandlerArgs<ActionKeepAliveAck>,
+	_: ActionHandlerArgs<ActionKeepAlive>,
 	client: Client,
 ) => {
-	client.lastKeepAlive = Date.now();
+	// Client type does not declare lastKeepAlive; use a cast to avoid TS error
+	(client as any).lastKeepAlive = Date.now();
 };
 
 
@@ -376,7 +377,7 @@ const skipAction = (
 	client: Client,
 ) => {
 	const [lobby, enemy] = getEnemy(client);
-	client.setSkips(skips);
+	client.skips = skips;
 	if (!lobby || !enemy) return;
 	enemy.sendAction({
 		action: "enemyInfo",

@@ -112,11 +112,10 @@ class Client {
 		if (!this.lobby) return;
 
 		this.sendAction({
-		action: "reconnectSuccess",
-		lives: this.lives,
-		score: this.score.toString(),
-		// ... other important state ...
-		});
+			action: 'reconnectSuccess',
+			lives: this.lives,
+			score: this.score.toString(),   // crucial
+		} as unknown as ActionServerToClient);
 	}
 
 	// You might also want to update this method:
