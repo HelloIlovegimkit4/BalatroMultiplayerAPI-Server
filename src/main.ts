@@ -144,7 +144,7 @@ const server = createServer((socket) => {
   })
 
   socket.on('error', (err) => {
-    console.warn('Socket error', err.code)
+    console.warn('Socket error', err)
   })
 })
 
