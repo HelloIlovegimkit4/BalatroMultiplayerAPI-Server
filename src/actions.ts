@@ -213,6 +213,14 @@ export type ActionHandlers = {
 		...args: any[]
 	) => void
 }
+export const keepAliveAction: ActionHandler<{}> = (data, client) => {
+    const id = data.playerId ?? client.id;
+    client.sendAction({
+        action: "keepAliveAck",
+        playerId: id,
+        time: Date.now(),
+    });
+};
 
 export type ActionHandlerArgs<T extends HandledActions> = Omit<T, 'action'>
 
