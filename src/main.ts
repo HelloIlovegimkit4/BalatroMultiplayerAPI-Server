@@ -417,7 +417,7 @@ const server = createServer((socket) => {
 
 	socket.on('end', () => {
 		console.log(`Client disconnected ${client.id}`)
-		actionHandlers.leaveLobby?.(client)
+		client.lobby?.handleDisconnect(client)
 	})
 
 	socket.on(
@@ -434,7 +434,7 @@ const server = createServer((socket) => {
 			} else {
 				console.error('An unexpected error occurred:', err)
 			}
-			actionHandlers.leaveLobby?.(client)
+			client.lobby?.handleDisconnect(client)
 		},
 	)
 })

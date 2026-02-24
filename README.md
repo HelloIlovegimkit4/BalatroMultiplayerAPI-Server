@@ -7,7 +7,7 @@ TCP game server for [Balatro Multiplayer](https://github.com/Balatro-Multiplayer
 - **Transport:** Raw TCP sockets on port `8788`, newline-delimited JSON messages
 - **Protocol:** Each message is a JSON object followed by `\n`
 - **Keep-alive:** Server sends `keepAlive` after 5s of inactivity, retries 3 times at 2.5s intervals before closing the connection
-- **Security:** No TLS or client verification. The server operates on good faith that clients are not tampered with.
+- **Security:** No TLS. The server now verifies that `modHash` matches a hash of the provided installed-mod list before allowing lobby actions.
 
 ## Setup
 
@@ -21,7 +21,7 @@ npm run start
 
 1. Client connects via TCP
 2. Server sends `connected` and `version`
-3. Client sends `username` with mod hash
+3. Client sends `username` with mod hash + installed mod list payload
 4. Client creates or joins a lobby
 5. Game actions flow between clients through the server
 6. Server maintains authoritative state for lives, scores, and PvP outcomes
@@ -219,6 +219,18 @@ action_name: param1, param2, param3?
 
 ---
 
+**reconnectPause:** missingPlayers, timeoutMs
+- Sent when a player disconnects/desyncs. The current match is paused and the lobby waits for reconnect(s).
+- missingPlayers: number - how many players are currently disconnected
+- timeoutMs: number - max wait time before the server ends the current game
+
+---
+
+**reconnectResume**
+- Sent when all disconnected players reconnect before timeout
+
+---
+
 **lobbyOptions:** gamemode, ...options
 - Syncs lobby options to the guest when host changes them
 - gamemode: string
@@ -350,10 +362,11 @@ action_name: param1, param2, param3?
 
 ### Client to Server
 
-**username:** username, modHash
+**username:** username, modHash, installedMods?
 - Sets the client's display name and mod hash for compatibility checking
 - username: string
 - modHash: string
+- installedMods?: string - pipe-delimited mod IDs used to validate `modHash` on the server
 
 ---
 

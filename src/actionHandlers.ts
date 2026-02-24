@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import type Client from "./Client.js";
 import GameModes from "./GameMode.js";
 import { InsaneInt } from "./InsaneInt.js";
@@ -40,18 +41,51 @@ import { generateSeed } from "./utils.js";
 /** Current TCG server version - clients must match this to use TCG features */
 const TCG_SERVER_VERSION = 1;
 
+const normalizeInstalledMods = (installedMods: string): string[] =>
+	installedMods
+		.split("|")
+		.map((mod) => mod.trim())
+		.filter(Boolean)
+		.sort((a, b) => a.localeCompare(b));
+
+const buildModProfileHash = (installedMods: string): string => {
+	const normalizedMods = normalizeInstalledMods(installedMods);
+	return createHash("sha256").update(normalizedMods.join("|")).digest("hex");
+};
+
+
 const usernameAction = (
-	{ username, modHash }: ActionHandlerArgs<ActionUsername>,
+	{ username, modHash, installedMods }: ActionHandlerArgs<ActionUsername>,
 	client: Client,
 ) => {
 	client.setUsername(username);
 	client.setModHash(modHash);
+
+	if (installedMods !== undefined) {
+		const calculatedHash = buildModProfileHash(installedMods);
+		if (calculatedHash !== modHash) {
+			client.sendAction({
+				action: "error",
+				message: "modHash mismatch with installed mods. Connection rejected.",
+			});
+			client.closeConnection();
+			return;
+		}
+		client.modProfileVerified = true;
+		return;
+	}
+
+	client.modProfileVerified = false;
 };
 
 const createLobbyAction = (
 	{ gameMode }: ActionHandlerArgs<ActionCreateLobby>,
 	client: Client,
 ) => {
+	if (!client.modProfileVerified) {
+		client.sendAction({ action: "error", message: "Your mod profile could not be verified." });
+		return;
+	}
 	/** Also sets the client lobby to this newly created one */
 	new Lobby(client, gameMode);
 };
@@ -60,6 +94,10 @@ const joinLobbyAction = (
 	{ code }: ActionHandlerArgs<ActionJoinLobby>,
 	client: Client,
 ) => {
+	if (!client.modProfileVerified) {
+		client.sendAction({ action: "error", message: "Your mod profile could not be verified." });
+		return;
+	}
 	const newLobby = Lobby.get(code);
 	if (!newLobby) {
 		client.sendAction({

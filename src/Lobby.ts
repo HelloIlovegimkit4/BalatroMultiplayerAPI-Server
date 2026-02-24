@@ -7,6 +7,7 @@ import type {
 } from "./actions.js";
 
 const Lobbies = new Map();
+const RECONNECT_TIMEOUT_MS = 60000;
 
 const generateUniqueLobbyCode = (): string => {
 	const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -38,6 +39,8 @@ class Lobby {
 	tcgBets: Map<string, number>;
     handyAllowMPExtension: Map<string, boolean>;
 	firstReadyAt: number | null;
+	reconnectTimer: ReturnType<typeof setTimeout> | null;
+	isReconnectPaused: boolean;
 
 	// Attrition is the default game mode
 	constructor(host: Client, gameMode: GameMode = "attrition") {
@@ -53,6 +56,8 @@ class Lobby {
 		this.tcgBets = new Map();
         this.handyAllowMPExtension = new Map();
 		this.firstReadyAt = null;
+		this.reconnectTimer = null;
+		this.isReconnectPaused = false;
 
 		host.setLobby(this);
 		host.isReadyLobby = false;
@@ -89,7 +94,41 @@ class Lobby {
 		}
 	};
 
+	private replaceDisconnectedPlayer = (candidate: Client): boolean => {
+		if (this.host && !this.host.connected && this.host.username === candidate.username && this.host.modHash === candidate.modHash) {
+			candidate.copyGameStateFrom(this.host)
+			candidate.setLobby(this)
+			this.handyAllowMPExtension.set(candidate.id, this.handyAllowMPExtension.get(this.host.id) ?? false)
+			this.handyAllowMPExtension.delete(this.host.id)
+			this.host = candidate
+			return true
+		}
+
+		if (this.guest && !this.guest.connected && this.guest.username === candidate.username && this.guest.modHash === candidate.modHash) {
+			candidate.copyGameStateFrom(this.guest)
+			candidate.setLobby(this)
+			this.handyAllowMPExtension.set(candidate.id, this.handyAllowMPExtension.get(this.guest.id) ?? false)
+			this.handyAllowMPExtension.delete(this.guest.id)
+			this.guest = candidate
+			return true
+		}
+
+		return false
+	}
+
 	join = (client: Client) => {
+		if (this.replaceDisconnectedPlayer(client)) {
+			client.sendAction({
+				action: "joinedLobby",
+				code: this.code,
+				type: this.gameMode,
+			});
+			client.sendAction({ action: "lobbyOptions", gamemode: this.gameMode, ...this.options });
+			this.resumeIfRecovered()
+			this.broadcastLobbyInfo();
+			return
+		}
+
 		if (this.guest) {
 			client.sendAction({
 				action: "error",
@@ -111,6 +150,67 @@ class Lobby {
 		client.sendAction({ action: "lobbyOptions", gamemode: this.gameMode, ...this.options });
 		this.broadcastLobbyInfo();
 	};
+
+	handleDisconnect = (client: Client) => {
+		if (this.host?.id !== client.id && this.guest?.id !== client.id) {
+			return
+		}
+
+		client.markDisconnected()
+		this.isReconnectPaused = true
+		this.broadcastAction({ action: "reconnectPause", missingPlayers: this.connectedPlayers(), timeoutMs: RECONNECT_TIMEOUT_MS })
+
+		if (this.reconnectTimer) {
+			clearTimeout(this.reconnectTimer)
+		}
+
+		this.reconnectTimer = setTimeout(() => {
+			if (this.host && !this.host.connected) {
+				this.host.setLobby(null)
+				this.handyAllowMPExtension.delete(this.host.id)
+				this.host = this.guest
+				this.guest = null
+			}
+			if (this.guest && !this.guest.connected) {
+				this.guest.setLobby(null)
+				this.handyAllowMPExtension.delete(this.guest.id)
+				this.guest = null
+			}
+
+			if (this.host === null) {
+				Lobbies.delete(this.code)
+				return
+			}
+
+			this.broadcastAction({ action: "stopGame" })
+			this.resetPlayers()
+			this.isReconnectPaused = false
+			this.broadcastLobbyInfo()
+		}, RECONNECT_TIMEOUT_MS)
+	}
+
+	private connectedPlayers = () => {
+		let missingPlayers = 0
+		if (!this.host?.connected) missingPlayers += 1
+		if (this.guest && !this.guest.connected) missingPlayers += 1
+		return missingPlayers
+	}
+
+	private resumeIfRecovered = () => {
+		if (!this.host || !this.guest || !this.host.connected || !this.guest.connected) {
+			return
+		}
+
+		if (this.reconnectTimer) {
+			clearTimeout(this.reconnectTimer)
+			this.reconnectTimer = null
+		}
+
+		if (this.isReconnectPaused) {
+			this.isReconnectPaused = false
+			this.broadcastAction({ action: "reconnectResume" })
+		}
+	}
 
 	broadcastAction = (action: ActionServerToClient) => {
 		this.host?.sendAction(action);
