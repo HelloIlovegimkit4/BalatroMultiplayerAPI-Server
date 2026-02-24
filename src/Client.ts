@@ -18,6 +18,7 @@ class Client {
 	address: Address
 	sendAction: SendFn
 	closeConnection: CloseConnFn
+	connected = true
 
 	// Game info
 	username = 'Guest'
@@ -39,6 +40,7 @@ class Client {
 	location = 'loc_selecting'
 
 	isCached = true
+	modProfileVerified = false
 
 	constructor(address: Address, send: SendFn, closeConnection: CloseConnFn) {
 		this.id = uuidv4()
@@ -96,6 +98,28 @@ class Client {
 
 	setSkips = (skips: number) => {
 		this.skips = skips
+	}
+
+	markDisconnected = () => {
+		this.connected = false
+		this.sendAction = () => {}
+		this.closeConnection = () => {}
+	}
+
+	copyGameStateFrom = (other: Client) => {
+		this.isReadyLobby = other.isReadyLobby
+		this.isReady = other.isReady
+		this.firstReady = other.firstReady
+		this.lives = other.lives
+		this.score = other.score
+		this.handsLeft = other.handsLeft
+		this.ante = other.ante
+		this.skips = other.skips
+		this.furthestBlind = other.furthestBlind
+		this.livesBlocker = other.livesBlocker
+		this.location = other.location
+		this.isCached = other.isCached
+		this.modProfileVerified = other.modProfileVerified
 	}
 }
 

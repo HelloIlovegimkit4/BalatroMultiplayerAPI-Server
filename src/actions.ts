@@ -59,6 +59,8 @@ export type ActionGetNemesisStatsRequest = { action: 'endGameStatsRequested' }
 export type ActionReceiveNemesisStatsRequest = { action: 'nemesisEndGameStats', reroll_count: string, reroll_cost_total:string, vouchers:string }
 export type ActionStartAnteTimer = { action: 'startAnteTimer', time: number }
 export type ActionPauseAnteTimer = { action: 'pauseAnteTimer', time: number }
+export type ActionReconnectPause = { action: 'reconnectPause', missingPlayers: number, timeoutMs: number }
+export type ActionReconnectResume = { action: 'reconnectResume' }
 // Handy Actions (Server to Client)
 export type ActionHandyMPExtensionLobbyEnabled = { action: 'handyMPExtensionLobbyEnabled', enabled: boolean }
 // TCG Actions (Server to Client)
@@ -104,6 +106,8 @@ export type ActionServerToClient =
 	| ActionReceiveNemesisStatsRequest
 	| ActionStartAnteTimer
 	| ActionPauseAnteTimer
+	| ActionReconnectPause
+	| ActionReconnectResume
 	| ActionTcgCompatible
 	| ActionTcgStartGame
 	| ActionTcgPlayerStatus
@@ -111,7 +115,7 @@ export type ActionServerToClient =
 	| ActionModded
     | ActionHandyMPExtensionLobbyEnabled
 // Client to Server
-export type ActionUsername = { action: 'username'; username: string; modHash: string }
+export type ActionUsername = { action: 'username'; username: string; modHash: string; installedMods?: string }
 export type ActionCreateLobby = { action: 'createLobby'; gameMode: GameMode }
 export type ActionJoinLobby = { action: 'joinLobby'; code: string }
 export type ActionLeaveLobby = { action: 'leaveLobby' }
